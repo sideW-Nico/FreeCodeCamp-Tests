@@ -5,18 +5,22 @@ class Category:
 
     def __str__(self):
         objectString = str()
+
         nameLength = len(self.name)
         characters = round( (30-nameLength) / 2 )
-        objectString += '*' * characters
-        objectString += self.name
-        objectString += ('*' * characters) + '\n'
+
+        objectString += '*' * characters + self.name + ('*' * characters) + '\n'
+
         for dictionary in self.ledger:
             amount = str(float(dictionary["amount"]))
             freeSpace = 30 - len(dictionary["description"]) - len(amount)
+
             if len(dictionary["description"]) > 30 - len(amount):
-                objectString += dictionary["description"][:30 - len(amount) - 1] + " " + amount + '\n'
+                objectString += dictionary["description"][:30 - len(amount) - 1] + ' ' + amount + '\n'
             else:
-                objectString += dictionary["description"] + (" " * freeSpace) + amount + "\n"
+                objectString += dictionary["description"] + (' ' * freeSpace) + amount + '\n'
+        
+        objectString += 'Total: ' + str(self.get_balance())
         return objectString
 
     def deposit( self, amount, description = str() ):
@@ -38,7 +42,6 @@ class Category:
         else: 
             return False
             
-        
     def get_balance(self):
         currentBalance = 0
         for dictionary in self.ledger:
@@ -46,8 +49,9 @@ class Category:
         return currentBalance
         
     def transfer(self, amount, budgetObject):
-        if budgetObject.withdraw(amount, 'Transfer to ' + self.name):
-            self.deposit(amount, 'Transfer from ' + budgetObject.name)
+        result = self.withdraw(amount, 'Transfer to ' + budgetObject.name)
+        if result:
+            budgetObject.deposit(amount, 'Transfer from ' + self.name)
             return True
         else:
             return False
@@ -56,12 +60,30 @@ class Category:
         currentTotalBudget = 0 
         for dictionary in self.ledger:
             currentTotalBudget += dictionary["amount"]
-        return (currentTotalBudget - amount) > 0
+        return (currentTotalBudget - amount) >= 0
 
 
-    
+def create_spend_chart(categories):
+    chart = str()
 
+    totalWithdrawals = 0
+    categoryBalance = 0
 
+    percentages = list()
 
+    for oneCategory in categories:
+        for categoryLedger in oneCategory.ledger:
+            if categoryLedger["amount"] >= 0: continue
 
-# def create_spend_chart(categories):
+            totalWithdrawals += categoryLedger["amount"]
+            categoryBalance = oneCategory.get_balance()
+            percentageCalculation = (categoryBalance * -(totalWithdrawals)) / (categoryBalance + (totalWithdrawals))
+            percentages.append( percentageCalculation )
+
+    for n in range(100, -1, -10):
+        chart += (" " * (3 - len(str(n)))) + str(n) + "| "
+        for percentage in percentages:
+            if percentage >= 0 and percentage < 10: chart += "o "
+            elif percentage > n - 10: chart += "o "
+        chart += '\n'
+    return chart

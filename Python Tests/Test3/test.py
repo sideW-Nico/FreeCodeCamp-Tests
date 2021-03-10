@@ -1,4 +1,4 @@
-import budget
+'''import budget
 
 food = budget.Category("Food")
 
@@ -12,3 +12,6 @@ clothing.deposit(200, "initial deposit")
 print(food)
 
 print(clothing)
+'''
+
+print(len(str(100)))

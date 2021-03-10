@@ -12,10 +12,10 @@ class Category:
         objectString += '*' * characters + self.name + ('*' * characters) + '\n'
 
         for dictionary in self.ledger:
-            amount = str(float(dictionary["amount"]))
+            amount = str(format(dictionary["amount"], '.2f'))
             freeSpace = 30 - len(dictionary["description"]) - len(amount)
 
-            if len(dictionary["description"]) > 30 - len(amount):
+            if len(dictionary["description"]) >= 30 - len(amount):
                 objectString += dictionary["description"][:30 - len(amount) - 1] + ' ' + amount + '\n'
             else:
                 objectString += dictionary["description"] + (' ' * freeSpace) + amount + '\n'
@@ -62,28 +62,48 @@ class Category:
             currentTotalBudget += dictionary["amount"]
         return (currentTotalBudget - amount) >= 0
 
+def maxLength(categories):
+    maxName = 0
+    for oneCategory in categories:
+        if len(oneCategory.name) > maxName: maxName = len(oneCategory.name)
+    return maxName
 
 def create_spend_chart(categories):
     chart = str()
 
-    totalWithdrawals = 0
-    categoryBalance = 0
-
     percentages = list()
 
     for oneCategory in categories:
+        totalWithdrawals = 0
+        categoryBalance = 0
         for categoryLedger in oneCategory.ledger:
             if categoryLedger["amount"] >= 0: continue
-
+            
             totalWithdrawals += categoryLedger["amount"]
-            categoryBalance = oneCategory.get_balance()
-            percentageCalculation = (categoryBalance * -(totalWithdrawals)) / (categoryBalance + (totalWithdrawals))
-            percentages.append( percentageCalculation )
+        categoryBalance = oneCategory.get_balance()
+        #percentageCalculation = (categoryBalance * -(totalWithdrawals)) / (categoryBalance + (-totalWithdrawals))
+        percentageCalculation = ((categoryBalance + (-totalWithdrawals)) * -(totalWithdrawals)) / categoryBalance
 
+        percentages.append( percentageCalculation )
+
+    chart += 'Percentage spent by category\n'
     for n in range(100, -1, -10):
         chart += (" " * (3 - len(str(n)))) + str(n) + "| "
         for percentage in percentages:
             if percentage >= 0 and percentage < 10: chart += "o "
-            elif percentage > n - 10: chart += "o "
+            elif percentage >= n : chart += "o  "
+            else: 
+                chart += "   "
         chart += '\n'
+    chart += '    -' + ('---' * len(categories) + '\n')
+    maxCategoryLength = maxLength(categories)
+    for n in range(maxCategoryLength):
+        chart += '     '
+        for oneCategory in categories:
+            try:
+                chart += oneCategory.name[n] + '  '
+            except IndexError:
+                chart += '   '
+        if n != maxCategoryLength: chart += '\n'
+
     return chart

@@ -14,4 +14,4 @@ print(food)
 print(clothing)
 '''
 
-print(len(str(100)))
+print(format(100, '.2f'))

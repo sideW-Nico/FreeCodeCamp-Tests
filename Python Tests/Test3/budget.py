@@ -47,7 +47,16 @@ class Category:
         for dictionary in self.ledger:
             currentBalance += dictionary["amount"]
         return currentBalance
-        
+    
+    
+    def get_withdrawls(self):
+        total = 0
+        for item in self.ledger:
+            if item["amount"] < 0:
+                total+= item["amount"]
+        return total
+
+  
     def transfer(self, amount, budgetObject):
         result = self.withdraw(amount, 'Transfer to ' + budgetObject.name)
         if result:
@@ -68,42 +77,54 @@ def maxLength(categories):
         if len(oneCategory.name) > maxName: maxName = len(oneCategory.name)
     return maxName
 
+def truncate(n):
+    multiplier = 10
+    return int(n * multiplier) / multiplier
+
+def getTotals(categories):
+    total = 0
+    breakdown = []
+    for category in categories:
+        total += category.get_withdrawls()
+        breakdown.append(category.get_withdrawls())
+        
+    rounded = list(map(lambda x: truncate(x/total), breakdown))
+    return rounded
+
 def create_spend_chart(categories):
-    chart = str()
+    res = "Percentage spent by category\n"
+    i = 100
+    totals = getTotals(categories)
+    while i >= 0:
+        cat_spaces = " "
+        for total in totals:
+            if total * 100 >= i:
+                cat_spaces += "o  "
+            else:
+                cat_spaces += "   "
+        res+= str(i).rjust(3) + "|" + cat_spaces + ("\n")
+        i-=10
+    
+    dashes = "-" + "---"*len(categories)
+    names = []
+    x_axis = ""
+    for category in categories:
+        names.append(category.name)
 
-    percentages = list()
+    maxi = max(names, key=len)
 
-    for oneCategory in categories:
-        totalWithdrawals = 0
-        categoryBalance = 0
-        for categoryLedger in oneCategory.ledger:
-            if categoryLedger["amount"] >= 0: continue
-            
-            totalWithdrawals += categoryLedger["amount"]
-        categoryBalance = oneCategory.get_balance()
-        #percentageCalculation = (categoryBalance * -(totalWithdrawals)) / (categoryBalance + (-totalWithdrawals))
-        percentageCalculation = ((categoryBalance + (-totalWithdrawals)) * -(totalWithdrawals)) / categoryBalance
+    actualLen = 0
+    for x in range(len(maxi)):
+        actualLen += 1
+        nameStr = '     '
+        for name in names:
+            if x >= len(name):
+                nameStr += "   "
+            else:
+                nameStr += name[x] + "  "
+        if actualLen != len(maxi):
+            nameStr += '\n'
+        x_axis += nameStr
 
-        percentages.append( percentageCalculation )
-
-    chart += 'Percentage spent by category\n'
-    for n in range(100, -1, -10):
-        chart += (" " * (3 - len(str(n)))) + str(n) + "| "
-        for percentage in percentages:
-            if percentage >= 0 and percentage < 10: chart += "o "
-            elif percentage >= n : chart += "o  "
-            else: 
-                chart += "   "
-        chart += '\n'
-    chart += '    -' + ('---' * len(categories) + '\n')
-    maxCategoryLength = maxLength(categories)
-    for n in range(maxCategoryLength):
-        chart += '     '
-        for oneCategory in categories:
-            try:
-                chart += oneCategory.name[n] + '  '
-            except IndexError:
-                chart += '   '
-        if n != maxCategoryLength: chart += '\n'
-
-    return chart
+    res+= dashes.rjust(len(dashes)+4) + "\n" + x_axis
+    return res
